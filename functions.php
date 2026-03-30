@@ -373,6 +373,22 @@ function caersport_woocommerce_settings( $values ) {
 }
 add_filter( 'best_shop_settings', 'caersport_woocommerce_settings' );
 
+/**
+ * Portada (página estática): ancho completo sin barra lateral.
+ * best_shop usa get_theme_mod( 'page_sidebar_layout' ); el filtro best_shop_settings solo afecta el valor por defecto,
+ * así que forzamos no-sidebar aquí para que no se cargue sidebar-1 (widgets por defecto).
+ */
+function caersport_front_page_no_page_sidebar( $value ) {
+    if ( is_admin() && ! is_customize_preview() ) {
+        return $value;
+    }
+    if ( is_front_page() && is_page() ) {
+        return 'no-sidebar';
+    }
+    return $value;
+}
+add_filter( 'theme_mod_page_sidebar_layout', 'caersport_front_page_no_page_sidebar', 20 );
+
 
 // ============================================================
 // SOPORTE DE CABECERA PERSONALIZADA
@@ -488,6 +504,28 @@ if ( !function_exists( 'caersport_woocommerce_customize_register' ) ) :
     }
 endif;
 add_action( 'customize_register', 'caersport_woocommerce_customize_register' );
+
+
+// ============================================================
+// INICIO: mostrar solo la plantilla del tema (hooks), no el contenido del editor de la página "Inicio"
+// ============================================================
+function caersport_hide_static_front_page_content( $content ) {
+    if ( is_admin() || wp_doing_ajax() || wp_is_json_request() || is_feed() ) {
+        return $content;
+    }
+    if ( is_preview() ) {
+        return $content;
+    }
+    // Solo cuando la portada es una página estática (Lectura → Página de inicio), no el blog de entradas.
+    if ( ! is_front_page() || ! is_page() ) {
+        return $content;
+    }
+    if ( ! in_the_loop() || ! is_main_query() ) {
+        return $content;
+    }
+    return '';
+}
+add_filter( 'the_content', 'caersport_hide_static_front_page_content', 999 );
 
 
 // ============================================================
